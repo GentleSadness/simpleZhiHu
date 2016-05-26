@@ -3,6 +3,7 @@ package com.example.ghost.zhihudaily.activity;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Window;
@@ -18,6 +19,7 @@ import com.example.ghost.zhihudaily.util.HttpCallbackListener;
 import com.example.ghost.zhihudaily.util.HttpUtil;
 import com.example.ghost.zhihudaily.util.Utility;
 
+import java.io.File;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,14 +51,8 @@ public class ChooseStoryActivity extends Activity {
     }
 
     private void queryStory(){
-        storyList.clear();
-        storyList.addAll(dailyDB.loadStory());
         if (storyList.size() > 0) {
             Log.i("Daily","ture");
-            for(Story story: storyList){
-                list.add(story.getTitle());
-                Log.i("queryStory",story.getTitle());
-            }
             adapter.notifyDataSetChanged();
         } else {
             queryFromServer(null, "story");
@@ -71,7 +67,7 @@ public class ChooseStoryActivity extends Activity {
         HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
             @Override
             public void onFinish(String response) {
-                Utility.handleStoryResponse(dailyDB, response);
+                storyList.addAll(Utility.handleStoryResponse(dailyDB, response));
                 Log.i("DB",response);
                     runOnUiThread(new Runnable() {
                         @Override
