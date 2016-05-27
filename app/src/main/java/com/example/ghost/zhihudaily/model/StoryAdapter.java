@@ -42,7 +42,7 @@ public class StoryAdapter extends ArrayAdapter<Story> {
             viewHolder = (ViewHolder) view.getTag();
         }
         viewHolder.storyTitle.setText(story.getTitle());
-        new DownloadImage(story.getImages(),viewHolder.storyImage).execute();
+        new DownloadImage(story.getImages(), viewHolder.storyImage, story.getId()).execute();
         return view;
     }
 

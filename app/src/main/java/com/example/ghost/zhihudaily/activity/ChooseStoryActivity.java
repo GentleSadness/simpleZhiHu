@@ -2,11 +2,15 @@ package com.example.ghost.zhihudaily.activity;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -29,6 +33,7 @@ import java.util.List;
  */
 public class ChooseStoryActivity extends Activity {
 
+    public static String path;
     private ProgressDialog progressDialog;
     private ListView listView;
     private StoryAdapter adapter;
@@ -39,15 +44,29 @@ public class ChooseStoryActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+
+
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
+        path =   this.getExternalCacheDir().getPath();
+        //Log.i("ChooseStoryActivity",path);
         listView = (ListView) findViewById(R.id.list_view);
         adapter = new StoryAdapter(ChooseStoryActivity.this, R.layout.list_item, storyList);
         //adapter = new ArrayAdapter<String>(ChooseStoryActivity.this, android.R.layout.simple_list_item_1, list);
         listView.setAdapter(adapter);
         dailyDB = DailyDB.getInstance(this);
         queryStory();
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Story story = storyList.get(position);
+                Intent intent = new Intent(ChooseStoryActivity.this, NewActivity.class);
+                intent.putExtra("id", story.getId());
+                startActivity(intent);
+            }
+        });
     }
 
     private void queryStory(){
@@ -111,5 +130,4 @@ public class ChooseStoryActivity extends Activity {
             progressDialog.dismiss();
         }
     }
-
 }

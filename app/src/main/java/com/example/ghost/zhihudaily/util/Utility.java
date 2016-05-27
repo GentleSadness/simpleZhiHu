@@ -49,4 +49,19 @@ public class Utility {
         }
         return null;
     }
+
+    public static String handleNewResponse(String response) {
+
+        if (!TextUtils.isEmpty(response)) {
+            try {
+                JSONObject jsonObject = new JSONObject(response);
+                String body = jsonObject.getString("body");
+                return body;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        return null;
+    }
 }
