@@ -67,7 +67,7 @@ public class DownloadImage extends AsyncTask<String, Integer, Uri> {
 
  public Uri getImageURI(String path, int id) throws Exception {
         String cache = ChooseStoryActivity.path;
-        File file = new File(cache + id);
+        File file = new File(cache + "/" + id);
         // 如果图片存在本地缓存目录，则不去服务器下载
         if (file.exists()) {
             return Uri.fromFile(file);//Uri.fromFile(path)这个方法能得到文件的URI
@@ -82,11 +82,8 @@ public class DownloadImage extends AsyncTask<String, Integer, Uri> {
 
                 InputStream is = conn.getInputStream();
                 FileOutputStream fos = new FileOutputStream(file);
-                byte[] buffer = new byte[1024];
-                int len = 0;
-                while ((len = is.read(buffer)) != -1) {
-                    fos.write(buffer, 0, len);
-                }
+                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
                 is.close();
                 fos.close();
                 // 返回一个URI对象

@@ -28,6 +28,7 @@ public class StoryAdapter extends ArrayAdapter<Story> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+
         Story story = getItem(position);
         View view;
         ViewHolder viewHolder;

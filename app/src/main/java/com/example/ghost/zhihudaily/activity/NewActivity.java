@@ -2,16 +2,25 @@ package com.example.ghost.zhihudaily.activity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 
 import com.example.ghost.zhihudaily.R;
+import com.example.ghost.zhihudaily.util.DownloadImage;
 import com.example.ghost.zhihudaily.util.HttpCallbackListener;
 import com.example.ghost.zhihudaily.util.HttpUtil;
 import com.example.ghost.zhihudaily.util.Utility;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Ghost on 2016/5/27.
@@ -20,11 +29,14 @@ public class NewActivity extends Activity {
 
     private String body;
     private WebView webView;
+    private String aaa;
+    private View view;
+    private List<String> list;
+    private String a;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.news);
         webView = (WebView) findViewById(R.id.web_view);
         Intent intent = getIntent();
@@ -36,12 +48,15 @@ public class NewActivity extends Activity {
 
             @Override
             public void onFinish(String response) {
-                body = Utility.handleNewResponse(response);
+                list = new ArrayList<String>();
+                list = Utility.handleNewResponse(response);
                 body = "<head><style>img{ max-width:100%; height:auto; }</style></head>" + body;
+                aaa = convertToHtml(list);
+                a = list.get(2);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        webView.loadDataWithBaseURL(null, body, "text/html", "utf-8", null); ; // 根据传入的参数再去加载新的网页
+                        webView.loadDataWithBaseURL(null, aaa, null, null, null); ; // 根据传入的参数再去加载新的网页
                     }
                 });
             }
@@ -50,5 +65,24 @@ public class NewActivity extends Activity {
 
             }
         });
+
+        view = getLayoutInflater().inflate(R.layout.layout1,webView, true);
+        ImageView image = (ImageView) view.findViewById(R.id.new_image);
+        File file = new File(ChooseStoryActivity.path + "/" + id);
+        new DownloadImage(a , image, id).execute();
+        //view = getLayoutInflater().inflate(R.layout.layout1,webView, true);
+        //webView.addView(view, 0);
+
+    }
+    public String convertToHtml(List<String> webContent){
+        StringBuilder stringBuilder = new StringBuilder("");
+        stringBuilder.append("<html>\n" +
+                "<head>\n" +
+                "<link rel=\"stylesheet\" href=\"").append(webContent.get(0)).append(
+                "\" type=\"text/css\">\n" +
+                        "\t\t<meta charset=\"utf-8\">\n"
+        ).append("</head>\n" +"<body>\n").append(webContent.get(1)).append("</body>\n" +
+                "</html>");
+        return stringBuilder.toString();
     }
 }

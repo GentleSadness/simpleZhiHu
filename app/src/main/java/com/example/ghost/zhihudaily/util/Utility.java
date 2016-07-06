@@ -19,7 +19,7 @@ import java.util.List;
  * Created by Ghost on 2016/5/25.
  */
 public class Utility {
-    public static List<Story> handleStoryResponse(DailyDB dailyDB, String response) {
+    public static List<Story> handleListStoryResponse(DailyDB dailyDB, String response) {
 
         List<Story> list = new ArrayList<Story>();
 
@@ -50,13 +50,50 @@ public class Utility {
         return null;
     }
 
-    public static String handleNewResponse(String response) {
+    public static List<Story> handlePagerResponse(DailyDB dailyDB, String response) {
+
+        List<Story> list = new ArrayList<Story>();
+
+        if (!TextUtils.isEmpty(response)) {
+            try {
+                JSONObject jsonObject = new JSONObject(response);
+                JSONArray jsonArray = jsonObject.getJSONArray("top_stories");
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObjectItem = jsonArray.getJSONObject(i);
+                    Story story = new Story();
+                    int id = jsonObjectItem.getInt("id");
+                    story.setId(id);
+                    String title = jsonObjectItem.getString("title");
+                    Log.i("Utility", "handlePagerResponse");
+                    story.setTitle(title);
+                    String images = jsonObjectItem.getString("image");
+                    story.setImages(images);
+                    dailyDB.saveStory(story);
+                    list.add(story);
+                }
+                return list;
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public static List<String> handleNewResponse(String response) {
 
         if (!TextUtils.isEmpty(response)) {
             try {
                 JSONObject jsonObject = new JSONObject(response);
                 String body = jsonObject.getString("body");
-                return body;
+                JSONArray c = jsonObject.getJSONArray("css");
+                String css = c.getString(0);
+                String image = jsonObject.getString("image");
+                List<String> list = new ArrayList<String>();
+                list.add(css);
+                list.add(body);
+                list.add(image);
+                return list;
             } catch (JSONException e) {
                 e.printStackTrace();
                 return null;

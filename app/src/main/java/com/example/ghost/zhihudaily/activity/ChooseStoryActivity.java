@@ -2,31 +2,40 @@ package com.example.ghost.zhihudaily.activity;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
-import android.text.TextUtils;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.ghost.zhihudaily.R;
 import com.example.ghost.zhihudaily.model.DailyDB;
+import com.example.ghost.zhihudaily.model.MyRefreshLayout;
+import com.example.ghost.zhihudaily.model.NewAdapter;
 import com.example.ghost.zhihudaily.model.Story;
 import com.example.ghost.zhihudaily.model.StoryAdapter;
+import com.example.ghost.zhihudaily.model.SwpipeListViewOnScrollListener;
 import com.example.ghost.zhihudaily.util.HttpCallbackListener;
 import com.example.ghost.zhihudaily.util.HttpUtil;
 import com.example.ghost.zhihudaily.util.Utility;
 
-import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+
+import me.relex.circleindicator.CircleIndicator;
+
 
 /**
  * Created by Ghost on 2016/5/25.
@@ -40,39 +49,83 @@ public class ChooseStoryActivity extends Activity {
     //private ArrayAdapter<String> adapter;
     private DailyDB dailyDB;
     private List<Story> storyList = new ArrayList<Story>();
+    private List<Story> topList = new ArrayList<Story>();
     private List<String >  list = new ArrayList<String>();
+    private NewAdapter newAdapter;
 
+    private int currentItem=0;
+
+    private TextView indexText;
+
+    private Button innerViewPagerDemo;
+
+    private List<Integer>       imageIdList;
+
+    private View view1, view2, view3;
+    private List<View> viewList;// view����
+    private ViewPager viewPager; // ��Ӧ��viewPager
+    PagerAdapter pagerAdapter;
+    CircleIndicator indicator;
+
+    private MyRefreshLayout swipeRefreshLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
 
 
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
-        path =   this.getExternalCacheDir().getPath();
+        path =   this.getFilesDir().getPath();
         //Log.i("ChooseStoryActivity",path);
+
+        //viewPager = (ViewPager) findViewById(R.id.view_pager);
+        swipeRefreshLayout = (MyRefreshLayout) findViewById(R.id.swipe_container);
         listView = (ListView) findViewById(R.id.list_view);
         adapter = new StoryAdapter(ChooseStoryActivity.this, R.layout.list_item, storyList);
+
+        View hearderViewLayout  = getLayoutInflater().inflate(R.layout.view_pager, null);
+        indicator = (CircleIndicator) hearderViewLayout.findViewById(R.id.indicator);
+        viewPager = (ViewPager)hearderViewLayout.findViewById(R.id.view_pager);
+
+
+        listView.addHeaderView(hearderViewLayout);
         //adapter = new ArrayAdapter<String>(ChooseStoryActivity.this, android.R.layout.simple_list_item_1, list);
         listView.setAdapter(adapter);
         dailyDB = DailyDB.getInstance(this);
         queryStory();
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+      listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Story story = storyList.get(position);
+                Story story = storyList.get(position-1);
                 Intent intent = new Intent(ChooseStoryActivity.this, NewActivity.class);
                 intent.putExtra("id", story.getId());
                 startActivity(intent);
             }
         });
+        SwpipeListViewOnScrollListener scrollListener = new SwpipeListViewOnScrollListener(swipeRefreshLayout);
+        listView.setOnScrollListener(scrollListener);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+            @Override
+            public void onRefresh() {
+                //Toast.makeText(ChooseStoryActivity.this,"正在刷新",Toast.LENGTH_SHORT).show();
+                queryStory();
+                //Toast.makeText(ChooseStoryActivity.this,"刷新完成",Toast.LENGTH_SHORT).show();
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
+        swipeRefreshLayout.setColorSchemeResources( android.R.color.holo_blue_light );
     }
 
     private void queryStory(){
         if (storyList.size() > 0) {
             Log.i("Daily","ture");
             adapter.notifyDataSetChanged();
+            newAdapter = new NewAdapter(topList, this);
+            viewPager.setAdapter(newAdapter);
+            indicator.setViewPager(viewPager);
+            setViewPagerAdapter(newAdapter);
+            swipeRefreshLayout.setRefreshing(false);
         } else {
             queryFromServer(null, "story");
             Log.i("Daily","false");
@@ -86,7 +139,8 @@ public class ChooseStoryActivity extends Activity {
         HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
             @Override
             public void onFinish(String response) {
-                storyList.addAll(Utility.handleStoryResponse(dailyDB, response));
+                storyList.addAll(Utility.handleListStoryResponse(dailyDB, response));
+                topList.addAll(Utility.handlePagerResponse(dailyDB, response));
                 Log.i("DB",response);
                     runOnUiThread(new Runnable() {
                         @Override
@@ -129,5 +183,39 @@ public class ChooseStoryActivity extends Activity {
         if (progressDialog != null) {
             progressDialog.dismiss();
         }
+    }
+
+    private Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            int pagerCount = viewPager.getAdapter().getCount();
+
+            viewPager.setCurrentItem(currentItem);
+            currentItem++;
+
+            if (currentItem > pagerCount-1) {
+                currentItem = 0;
+            }
+            this.sendEmptyMessageDelayed(0, 3000);
+//            Log.e("TAG4","current:"+currentItem+"pagercount:"+pagerCount);
+            Log.e("TAG4","currentItem4:"+viewPager.getCurrentItem()+"pagercount:"+pagerCount);
+
+        }
+    };
+
+    public void setViewPagerAdapter(PagerAdapter adapter) {
+        mHandler.sendEmptyMessageDelayed(0, 2000);//让viewpager轮播
+        //当viewpager获得焦点时停止轮播
+        viewPager.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    mHandler.removeCallbacksAndMessages(null);
+                } else {
+                    mHandler.sendEmptyMessageDelayed(0, 2000);
+                }
+            }
+        });
     }
 }
