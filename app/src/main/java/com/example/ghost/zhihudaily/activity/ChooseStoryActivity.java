@@ -8,12 +8,15 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
@@ -53,7 +56,7 @@ public class ChooseStoryActivity extends Activity {
     private List<String >  list = new ArrayList<String>();
     private NewAdapter newAdapter;
 
-    private int currentItem=0;
+    public int currentItem=0;
 
     private TextView indexText;
 
@@ -67,15 +70,16 @@ public class ChooseStoryActivity extends Activity {
     PagerAdapter pagerAdapter;
     CircleIndicator indicator;
 
+    private boolean list_flag = true;
+
     private MyRefreshLayout swipeRefreshLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
 
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        path =   this.getFilesDir().getPath();
+        path = this.getFilesDir().getPath();
         //Log.i("ChooseStoryActivity",path);
 
         //viewPager = (ViewPager) findViewById(R.id.view_pager);
@@ -83,9 +87,9 @@ public class ChooseStoryActivity extends Activity {
         listView = (ListView) findViewById(R.id.list_view);
         adapter = new StoryAdapter(ChooseStoryActivity.this, R.layout.list_item, storyList);
 
-        View hearderViewLayout  = getLayoutInflater().inflate(R.layout.view_pager, null);
+        View hearderViewLayout = getLayoutInflater().inflate(R.layout.view_pager, null);
         indicator = (CircleIndicator) hearderViewLayout.findViewById(R.id.indicator);
-        viewPager = (ViewPager)hearderViewLayout.findViewById(R.id.view_pager);
+        viewPager = (ViewPager) hearderViewLayout.findViewById(R.id.view_pager);
 
 
         listView.addHeaderView(hearderViewLayout);
@@ -93,17 +97,15 @@ public class ChooseStoryActivity extends Activity {
         listView.setAdapter(adapter);
         dailyDB = DailyDB.getInstance(this);
         queryStory();
-      listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Story story = storyList.get(position-1);
+                Story story = storyList.get(position - 1);
                 Intent intent = new Intent(ChooseStoryActivity.this, NewActivity.class);
                 intent.putExtra("id", story.getId());
                 startActivity(intent);
             }
         });
-        SwpipeListViewOnScrollListener scrollListener = new SwpipeListViewOnScrollListener(swipeRefreshLayout);
-        listView.setOnScrollListener(scrollListener);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
 
             @Override
@@ -114,17 +116,92 @@ public class ChooseStoryActivity extends Activity {
                 swipeRefreshLayout.setRefreshing(false);
             }
         });
-        swipeRefreshLayout.setColorSchemeResources( android.R.color.holo_blue_light );
-    }
+        swipeRefreshLayout.setColorSchemeResources(android.R.color.holo_blue_light);
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                currentItem = position;
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                if (state == 0){
+                    if(currentItem == (topList.size() - 1)){
+                        viewPager.setCurrentItem(1, false);
+                    }else if(currentItem == 0){
+                        viewPager.setCurrentItem(topList.size() - 2, false);
+                    }
+                }
+            }
+        });
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if(listView.getLastVisiblePosition()==listView.getCount()-1){
+                    if(list_flag){
+                        list_flag = false;
+                        Toast.makeText(ChooseStoryActivity.this,"onScrollStateChanged",Toast.LENGTH_SHORT).show();
+                        String address;
+                        address = "http://news.at.zhihu.com/api/4/news/before/";
+                        address += 20160709;
+                        HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
+                            @Override
+                            public void onFinish(String response) {
+                                storyList.addAll(Utility.handleListStoryResponse(dailyDB, response));
+                                Log.i("DB",response);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        queryStory();
+                                        list_flag = true;
+                                        Log.i("notify","Changed");
+                                    }
+                                });
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                // 通过runOnUiThread()方法回到主线程处理逻辑
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        list_flag = true;
+                                        Toast.makeText(ChooseStoryActivity.this, "加载失败", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                View firstView = view.getChildAt(firstVisibleItem);
+
+                // 当firstVisibleItem是第0位。如果firstView==null说明列表为空，需要刷新;或者top==0说明已经到达列表顶部, 也需要刷新
+                if (firstVisibleItem == 0 && (firstView == null || firstView.getTop() == 0)) {
+                    swipeRefreshLayout.setEnabled(true);
+                } else {
+                    swipeRefreshLayout.setEnabled(false);
+                }
+            }
+        });
+    }
     private void queryStory(){
         if (storyList.size() > 0) {
             Log.i("Daily","ture");
             adapter.notifyDataSetChanged();
-            newAdapter = new NewAdapter(topList, this);
+            if(newAdapter == null){
+                newAdapter = new NewAdapter(topList, this);//句柄，注意
+            }
             viewPager.setAdapter(newAdapter);
             indicator.setViewPager(viewPager);
-            setViewPagerAdapter(newAdapter);
+            //setViewPagerAdapter(newAdapter);
             swipeRefreshLayout.setRefreshing(false);
         } else {
             queryFromServer(null, "story");

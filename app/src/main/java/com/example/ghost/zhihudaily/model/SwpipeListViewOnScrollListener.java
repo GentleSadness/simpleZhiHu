@@ -22,6 +22,7 @@ public class SwpipeListViewOnScrollListener implements AbsListView.OnScrollListe
 
     @Override
     public void onScrollStateChanged(AbsListView absListView, int i) {
+
     }
 
     @Override
