@@ -3,6 +3,7 @@ package com.example.ghost.zhihudaily.activity;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -11,6 +12,7 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -35,6 +37,7 @@ import com.example.ghost.zhihudaily.util.HttpUtil;
 import com.example.ghost.zhihudaily.util.Utility;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import me.relex.circleindicator.CircleIndicator;
@@ -43,8 +46,9 @@ import me.relex.circleindicator.CircleIndicator;
 /**
  * Created by Ghost on 2016/5/25.
  */
-public class ChooseStoryActivity extends Activity {
+public class ChooseStoryActivity extends AppCompatActivity {
 
+    public static int date;
     public static String path;
     private ProgressDialog progressDialog;
     private ListView listView;
@@ -75,11 +79,10 @@ public class ChooseStoryActivity extends Activity {
     private MyRefreshLayout swipeRefreshLayout;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        path = this.getFilesDir().getPath();
+        setTitle("首页");
+        path = getExternalFilesDir("cache").getPath();
         //Log.i("ChooseStoryActivity",path);
 
         //viewPager = (ViewPager) findViewById(R.id.view_pager);
@@ -103,6 +106,7 @@ public class ChooseStoryActivity extends Activity {
                 Story story = storyList.get(position - 1);
                 Intent intent = new Intent(ChooseStoryActivity.this, NewActivity.class);
                 intent.putExtra("id", story.getId());
+                intent.putExtra("title",story.getTitle());
                 startActivity(intent);
             }
         });
@@ -145,10 +149,12 @@ public class ChooseStoryActivity extends Activity {
                 if(listView.getLastVisiblePosition()==listView.getCount()-1){
                     if(list_flag){
                         list_flag = false;
-                        Toast.makeText(ChooseStoryActivity.this,"onScrollStateChanged",Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(ChooseStoryActivity.this,"onScrollStateChanged",Toast.LENGTH_SHORT).show();
                         String address;
                         address = "http://news.at.zhihu.com/api/4/news/before/";
-                        address += 20160709;
+                        Story story= storyList.get(listView.getLastVisiblePosition() - 1);
+                        address += story.getDate();
+
                         HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
                             @Override
                             public void onFinish(String response) {
@@ -186,9 +192,20 @@ public class ChooseStoryActivity extends Activity {
                 // 当firstVisibleItem是第0位。如果firstView==null说明列表为空，需要刷新;或者top==0说明已经到达列表顶部, 也需要刷新
                 if (firstVisibleItem == 0 && (firstView == null || firstView.getTop() == 0)) {
                     swipeRefreshLayout.setEnabled(true);
+                    setTitle("首页");
                 } else {
                     swipeRefreshLayout.setEnabled(false);
                 }
+                if (firstVisibleItem != 0 ){
+                    Story story = storyList.get(firstVisibleItem);
+                    String date = story.getDate();
+                    String year = date.substring(0, 4);
+                    String mouth = date.substring(4, 6);
+                    String day = date.substring(6 ,8);
+                    String d = year + "年" + mouth + "月" + day + "日";
+                    setTitle(d);
+                }
+
             }
         });
     }
@@ -201,7 +218,7 @@ public class ChooseStoryActivity extends Activity {
             }
             viewPager.setAdapter(newAdapter);
             indicator.setViewPager(viewPager);
-            //setViewPagerAdapter(newAdapter);
+            setViewPagerAdapter(newAdapter);
             swipeRefreshLayout.setRefreshing(false);
         } else {
             queryFromServer(null, "story");
@@ -271,7 +288,7 @@ public class ChooseStoryActivity extends Activity {
             viewPager.setCurrentItem(currentItem);
             currentItem++;
 
-            if (currentItem > pagerCount-1) {
+            if (currentItem > pagerCount-2) {
                 currentItem = 0;
             }
             this.sendEmptyMessageDelayed(0, 3000);

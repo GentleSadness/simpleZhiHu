@@ -9,6 +9,8 @@ public class Story {
     private int id;
     private String title;
     private String images;
+    private String date;
+    private boolean isdate = false;
 
     public int getId() {
         Log.i("Story",id + "");
@@ -31,5 +33,19 @@ public class Story {
     }
     public void setImages(String images) {
         this.images = images;
+    }
+
+    public String getDate() {
+        return date;
+    }
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public boolean getBoolean() {
+        return isdate;
+    }
+    public void setBoolean(boolean a) {
+        this.isdate = a;
     }
 }

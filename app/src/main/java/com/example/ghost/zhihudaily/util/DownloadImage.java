@@ -83,7 +83,7 @@ public class DownloadImage extends AsyncTask<String, Integer, Uri> {
                 InputStream is = conn.getInputStream();
                 FileOutputStream fos = new FileOutputStream(file);
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                bitmap.compress(Bitmap.CompressFormat.PNG, 80, fos);
                 is.close();
                 fos.close();
                 // 返回一个URI对象

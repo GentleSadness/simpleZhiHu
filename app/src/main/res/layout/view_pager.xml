@@ -11,20 +11,10 @@
 </android.support.v4.view.ViewPager>
 
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:text="今日热闻"
-        android:textSize="15sp"
-        android:layout_marginLeft="10dp"
-        android:id="@+id/pager_text"
-        android:gravity="center"
-        android:layout_below="@id/view_pager"/>
-
     <me.relex.circleindicator.CircleIndicator
         android:id="@+id/indicator"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:layout_above="@id/pager_text"/>
+        android:layout_alignParentBottom="true"/>
 
 </RelativeLayout>

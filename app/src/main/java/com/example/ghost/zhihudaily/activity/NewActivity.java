@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebSettings;
@@ -33,6 +34,7 @@ public class NewActivity extends Activity {
     private View view;
     private List<String> list;
     private String a;
+    private int id;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +42,12 @@ public class NewActivity extends Activity {
         setContentView(R.layout.news);
         webView = (WebView) findViewById(R.id.web_view);
         Intent intent = getIntent();
-        int id = intent.getIntExtra("id", 0);
+        id = intent.getIntExtra("id", 0);
+        setTitle(intent.getStringExtra("title"));
         String path = "http://news-at.zhihu.com/api/4/news/";
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
+        view = getLayoutInflater().inflate(R.layout.layout3,webView, false);
         HttpUtil.sendHttpRequest(path + id, new HttpCallbackListener(){
 
             @Override
@@ -53,6 +57,10 @@ public class NewActivity extends Activity {
                 body = "<head><style>img{ max-width:100%; height:auto; }</style></head>" + body;
                 aaa = convertToHtml(list);
                 a = list.get(2);
+
+                ImageView image = (ImageView) view.findViewById(R.id.new_image);
+                File file = new File(ChooseStoryActivity.path + "/" + id);
+                new DownloadImage(a , image, id+1000).execute();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -66,10 +74,8 @@ public class NewActivity extends Activity {
             }
         });
 
-        view = getLayoutInflater().inflate(R.layout.layout1,webView, true);
-        ImageView image = (ImageView) view.findViewById(R.id.new_image);
-        File file = new File(ChooseStoryActivity.path + "/" + id);
-        new DownloadImage(a , image, id).execute();
+
+        webView.addView(view, 0);
         //view = getLayoutInflater().inflate(R.layout.layout1,webView, true);
         //webView.addView(view, 0);
 
